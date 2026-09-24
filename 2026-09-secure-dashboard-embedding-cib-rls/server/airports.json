@@ -1,0 +1,6 @@
+{
+  "_README": "Group -> airport RLS config, kept out of code so airports/admins change without a redeploy. Convention: a Databricks group '<groupPrefix><code>' grants airport <code> (e.g. airport-fra -> FRA, airport-bsb -> BSB), so you normally list nothing here. Members of an 'adminGroups' group see ALL airports. 'groups' is only for group names that do NOT follow the convention (lowercased group name -> code). Env vars AIRPORT_GROUP_PREFIX / ADMIN_GROUPS / GROUP_AIRPORT_MAP override this file at deploy time.",
+  "groupPrefix": "airport-",
+  "adminGroups": ["airport-admin"],
+  "groups": {}
+}
