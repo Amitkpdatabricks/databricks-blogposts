@@ -1,5 +1,8 @@
 job_inactive_days: 90
 dashboard_inactive_days: 60
+# Jobs that have never run: false = skip and flag for manual review (safer default),
+# true = treat as delete candidates.
+delete_never_run: false
 cluster_idle_hours: 48
 cost_anomaly_multiplier: 3.0
 min_dbu_threshold: 0.01

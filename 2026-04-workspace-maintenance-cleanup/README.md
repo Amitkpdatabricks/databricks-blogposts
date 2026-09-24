@@ -1,13 +1,20 @@
 # Databricks Workspace Cleanup
 
-Automated workspace maintenance using Databricks Asset Bundles — clean up unused jobs, dashboards, vector search indexes, and clusters with full audit logging and Lakeview dashboards.
+Automated workspace maintenance using Declarative Automation Bundles (DAB) — clean up unused jobs, dashboards, vector search indexes, and clusters with full audit logging and Lakeview dashboards.
 
 ## Two Approaches
 
-1. **API-Driven Cleanup** — REST APIs scan and remove unused resources by metadata (last run date, status, source table existence)
+1. **API-Driven Cleanup** — the Databricks SDK for Python (`WorkspaceClient`) scans and removes unused resources by metadata (last run date, status, source table existence). Using the SDK means auth is resolved automatically from the runtime context (no manual host/token/headers), so the same code runs unchanged in every target workspace.
 2. **System Table-Driven Cleanup** — Query `system.billing.usage`, `system.compute.clusters`, `system.lakeflow.job_run_timeline`, and `system.query.history` to find resources costing money but delivering no value
 
 Both approaches log every action (deleted, skipped, flagged) to a Delta table for auditability.
+
+### Safety defaults
+
+- **Dry-run first.** Dev always runs in dry-run and only logs `FLAGGED` candidates; execution is opt-in per environment.
+- **Jobs that have never run are skipped** (flagged for manual review) unless `delete_never_run: true` is set in `thresholds.yaml`.
+- **Dashboards are trashed, not permanently deleted** (`w.lakeview.trash`), so they remain recoverable.
+- **Vector indexes are only deleted when orphaned** — a delta-sync index whose source table no longer exists. Direct-access indexes and still-provisioning indexes are never treated as candidates.
 
 ## Structure
 
@@ -18,9 +25,9 @@ Both approaches log every action (deleted, skipped, flagged) to a Delta table fo
 │   └── thresholds.yaml         # Retention thresholds
 ├── notebooks/
 │   ├── 00_cleanup_logger.py    # Structured logging module
-│   ├── 01_api_job_cleanup.py   # API: delete inactive jobs
-│   ├── 02_api_dashboard_cleanup.py  # API: remove stale dashboards
-│   ├── 03_api_vector_cleanup.py     # API: purge orphaned indexes
+│   ├── 01_api_job_cleanup.py   # SDK: delete inactive jobs
+│   ├── 02_api_dashboard_cleanup.py  # SDK: trash stale dashboards
+│   ├── 03_api_vector_cleanup.py     # SDK: purge orphaned indexes
 │   ├── 04_system_table_analysis.py  # System tables: discover waste
 │   └── 05_system_table_cleanup.py   # System tables: act on flagged items
 └── dashboards/
@@ -40,9 +47,11 @@ databricks bundle deploy --target prod
 
 ## Configuration
 
-Edit `config/config.yaml` to toggle cleanups per environment. Edit `config/thresholds.yaml` to set retention periods.
+Edit `config/config.yaml` to toggle cleanups per environment. Edit `config/thresholds.yaml` to set retention periods and behavior toggles (`job_inactive_days`, `dashboard_inactive_days`, `delete_never_run`).
 
 Dev always runs in dry-run mode. Production executes deletions on a weekly Sunday 2 AM schedule.
+
+The notebooks run on serverless compute and use the `databricks-sdk` package (already available in the Databricks runtime / serverless environments). Pin the SDK version in the bundle to keep attribute names stable.
 
 ## Blog Post
 

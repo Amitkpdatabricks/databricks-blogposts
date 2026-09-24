@@ -2,7 +2,7 @@
 # Structured logging for all cleanup operations — writes to Delta table
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class CleanupLogger:
@@ -34,7 +34,7 @@ class CleanupLogger:
     def log(self, environment, resource_type, resource_id, resource_name,
             owner, action, reason, dry_run=False, details=None):
         self.entries.append({
-            "timestamp": datetime.utcnow(),
+            "timestamp": datetime.now(timezone.utc),
             "environment": environment,
             "resource_type": resource_type,
             "resource_id": str(resource_id),
